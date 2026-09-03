@@ -78,12 +78,27 @@ resource "google_compute_global_address" "this" {
   project = var.project_id
 }
 
+resource "google_compute_global_address" "ipv6" {
+  name       = "${var.name}-lb-ipv6"
+  project    = var.project_id
+  ip_version = "IPV6"
+}
+
 resource "google_compute_global_forwarding_rule" "https" {
   name                  = "${var.name}-https-fr"
   project               = var.project_id
   target                = google_compute_target_https_proxy.this.id
   port_range            = "443"
   ip_address            = google_compute_global_address.this.id
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+}
+
+resource "google_compute_global_forwarding_rule" "https_ipv6" {
+  name                  = "${var.name}-https-fr-ipv6"
+  project               = var.project_id
+  target                = google_compute_target_https_proxy.this.id
+  port_range            = "443"
+  ip_address            = google_compute_global_address.ipv6.id
   load_balancing_scheme = "EXTERNAL_MANAGED"
 }
 
@@ -109,5 +124,14 @@ resource "google_compute_global_forwarding_rule" "http" {
   target                = google_compute_target_http_proxy.this.id
   port_range            = "80"
   ip_address            = google_compute_global_address.this.id
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+}
+
+resource "google_compute_global_forwarding_rule" "http_ipv6" {
+  name                  = "${var.name}-http-fr-ipv6"
+  project               = var.project_id
+  target                = google_compute_target_http_proxy.this.id
+  port_range            = "80"
+  ip_address            = google_compute_global_address.ipv6.id
   load_balancing_scheme = "EXTERNAL_MANAGED"
 }

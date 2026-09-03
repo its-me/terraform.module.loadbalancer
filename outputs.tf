@@ -1,6 +1,11 @@
 output "ip_address" {
-  description = "Global external IP of the load balancer. Point an A record for every domain in var.backends at this."
+  description = "Global external IPv4 address of the load balancer. Point an A record for every domain in var.backends at this."
   value       = google_compute_global_address.this.address
+}
+
+output "ipv6_address" {
+  description = "Global external IPv6 address of the load balancer. Point an AAAA record for every domain in var.backends at this."
+  value       = google_compute_global_address.ipv6.address
 }
 
 output "backend_service_ids" {
