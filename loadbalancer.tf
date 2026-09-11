@@ -7,10 +7,19 @@
 locals {
   backend_keys = { for domain, backend in var.backends : domain => replace(domain, ".", "-") }
   default_host = sort(keys(var.backends))[0]
+
+  # Only backends without a pre-existing backend_service_id need this module to create
+  # their NEG + backend service.
+  owned_backends = { for domain, b in var.backends : domain => b if b.backend_service_id == null }
+
+  backend_service_ids = merge(
+    { for domain, b in var.backends : domain => b.backend_service_id if b.backend_service_id != null },
+    { for domain, backend in google_compute_backend_service.this : domain => backend.id },
+  )
 }
 
 resource "google_compute_region_network_endpoint_group" "this" {
-  for_each = var.backends
+  for_each = local.owned_backends
 
   name                  = "${var.name}-${local.backend_keys[each.key]}-neg"
   project               = var.project_id
@@ -23,7 +32,7 @@ resource "google_compute_region_network_endpoint_group" "this" {
 }
 
 resource "google_compute_backend_service" "this" {
-  for_each = var.backends
+  for_each = local.owned_backends
 
   name                  = "${var.name}-${local.backend_keys[each.key]}-backend"
   project               = var.project_id
@@ -47,7 +56,7 @@ resource "google_compute_managed_ssl_certificate" "this" {
 resource "google_compute_url_map" "this" {
   name            = "${var.name}-url-map"
   project         = var.project_id
-  default_service = google_compute_backend_service.this[local.default_host].id
+  default_service = local.backend_service_ids[local.default_host]
 
   dynamic "host_rule" {
     for_each = var.backends
@@ -61,7 +70,7 @@ resource "google_compute_url_map" "this" {
     for_each = var.backends
     content {
       name            = local.backend_keys[path_matcher.key]
-      default_service = google_compute_backend_service.this[path_matcher.key].id
+      default_service = local.backend_service_ids[path_matcher.key]
     }
   }
 }

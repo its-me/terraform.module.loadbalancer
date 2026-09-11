@@ -9,8 +9,8 @@ output "ipv6_address" {
 }
 
 output "backend_service_ids" {
-  description = "Map of domain -> backend service ID."
-  value       = { for domain, backend in google_compute_backend_service.this : domain => backend.id }
+  description = "Map of domain -> backend service ID, whether created by this module or passed in via backend_service_id."
+  value       = local.backend_service_ids
 }
 
 output "certificate_id" {
